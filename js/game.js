@@ -44,7 +44,7 @@ function Ship(startPos, ctx) {
   var checkLocation = function(loc) {
     if (loc === undefined) {
       return null
-    } else if (loc.x < 0+width/2) {
+    } else if (loc.x < 0+width/2 || loc.x > 2000-width/2) {
       return false
     }
     return true
