@@ -16,6 +16,9 @@ function Camera(startPos, wView, hView, ctx) {
   this.x = startPos.x;
   this.y = startPos.y;
   return {
+    toWorld: function(clientX, clientY) {
+      return [clientX - this.x, clientY - this.y];
+    },
     update: function(mod) {
       if (this.direction == 1){
         this.x += 5;
@@ -25,7 +28,7 @@ function Camera(startPos, wView, hView, ctx) {
       }
     },
     render: function() {
-      ctx.translate(startPos.x, startPos.y);
+      ctx.translate(this.x, this.y);
     },
     x: this.x, y: this.y
   }
@@ -41,11 +44,16 @@ function Ship(startPos, ctx) {
   var checkLocation = function(loc) {
     if (loc === undefined) {
       return null
+    } else if (loc.x < 0+width/2) {
+      return false
     }
     return true
   };
 
   return {
+    debug: function() {
+      return "x=> " + x + " y=> " + y
+    },
     update: function(mod) {
       var validLocation = checkLocation(this.location);
       if (validLocation === true) {
@@ -93,7 +101,7 @@ function Game() {
     document.body.appendChild(canvas);
 
     this.ship = new Ship({x: 250, y: 15}, ctx);
-    this.camera = new Camera({x: 250, y: 0}, 500, 500, ctx);
+    this.camera = new Camera({x: 0, y: 0}, 500, 500, ctx);
 
     registerListeners(canvas);
   };
@@ -110,6 +118,8 @@ function Game() {
         inputState.keyLeft = true;
       } else if (e.keyCode == 39) {
         inputState.keyRight = true;
+      } else if (e.keyCode == 32) {
+        inputState.space = true;
       }
     }, false);
     window.addEventListener('keyup', function(e) {
@@ -117,6 +127,8 @@ function Game() {
         inputState.keyLeft = false;
       } else if (e.keyCode == 39) {
         inputState.keyRight = false;
+      } else if (e.keyCode == 32) {
+        inputState.space = false;
       }
     }, false);
   }
@@ -124,19 +136,23 @@ function Game() {
   // Should each game part handle it's own input?
   var handleInput = function(now) {
     if (inputState.leftClick) {
-      this.ship.location = {x: inputState.mouseTarget.x, y: inputState.mouseTarget.y};
+      var move = this.camera.toWorld(inputState.mouseTarget.x, inputState.mouseTarget.y);
+      this.ship.location = {x: move[0], y: move[1]};
       console.log('triggering a move');
       inputState.leftClick = false;
       inputState.mouseTarget = {};
     }
+    if (inputState.space){
+      console.info("Ship location", this.ship.debug());
+    }
     this.camera.direction = 0;
     if (inputState.keyLeft) {
-      console.log('cam move left');
-      this.camera.direction = -1;
-    }
-    if (inputState.keyRight) {
       console.log('cam move Right');
       this.camera.direction = 1;
+    }
+    if (inputState.keyRight) {
+      console.log('cam move left');
+      this.camera.direction = -1;
     }
   }
 
@@ -147,7 +163,8 @@ function Game() {
 
   var render = function() {
     ctx.save();
-    ctx.translate(this.camera.x, this.camera.y);
+    // ctx.translate(this.camera.x, this.camera.y);
+    this.camera.render();
     ctx.clearRect(0, 0, 500, 500);
     ctx.drawImage(bgStars, 0, 0, bgStars.width, bgStars.height);
     this.ship.render();
