@@ -66,6 +66,7 @@ function Ship(startPos, ctx) {
         if (Math.abs(this.location.x - x) <= 1
           && Math.abs(this.location.y - y) <= 1) {
           moving = false;
+          this.attackMove = false; // In the future check to see if switch to attack
           x = this.location.x;
           y = this.location.y;
           this.location = undefined;
@@ -120,7 +121,6 @@ function Game() {
   var registerListeners = function(canvas) {
     canvas.addEventListener('mousedown', function(e) {
       e.preventDefault();
-      console.log(e);
       if (e.which == 1) { // left
         inputState.leftClick = true;
       } else if (e.which == 3) {
@@ -160,16 +160,24 @@ function Game() {
   var handleInput = function(now) {
     if (inputState.leftClick || inputState.rightClick) {
       console.log('triggering a move');
-      var move = this.camera.toWorld(inputState.mouseTarget.x, inputState.mouseTarget.y);
-      this.ship.location = {x: move[0], y: move[1]};
-      if (inputState.leftClick) {
+      console.log(inputState.mouseTarget);
+      if (inputState.mouseTarget == null) { // null means a bad click
+        console.error("Error moving", this.ship);
         inputState.leftClick = false;
-        this.ship.attackMove = false;
-      } else if (inputState.rightClick) {
         inputState.rightClick = false;
-        this.ship.attackMove = true;
+        return
+      } else { // normal path here
+        var move = this.camera.toWorld(inputState.mouseTarget.x, inputState.mouseTarget.y);
+        inputState.mouseTarget = null;
+        this.ship.location = {x: move[0], y: move[1]};
+        if (inputState.leftClick) {
+          inputState.leftClick = false;
+          this.ship.attackMove = false;
+        } else if (inputState.rightClick) {
+          inputState.rightClick = false;
+          this.ship.attackMove = true;
+        }
       }
-      inputState.mouseTarget = {};
     }
     if (inputState.space){
       console.info("Ship location", this.ship.debug());
