@@ -106,7 +106,33 @@ function Ship(startPos, ctx) {
 
 function Game() {
   // Private gamestate
-  var inputState = {};
+  var ALL_CONTEXTS = {
+    SHIP: 'ship',
+    SPACE: 'space'
+  };
+  var mouseCodes = {
+    '1': 'LEFTCLICK',
+    '3': 'RIGHTCLICK'
+  };
+  var buttons = {
+    '32': 'SPACE',
+    '27': 'ESC',
+    '37': 'LEFT',
+    '39': 'RIGHT'
+  };
+  var inputState = {
+    actions: {
+      LEFTCLICK: false,
+      RIGHTCLICK: false,
+      SPACE: false,
+      LEFT: false,
+      RIGHT: false,
+      ESC: false
+    }
+  };
+  var gameContexts;
+  var currentContext = null;
+
   var init = function() {
     this.requestAnimationFrame = window.requestAnimationFrame;
 
@@ -120,79 +146,91 @@ function Game() {
     this.camera = new Camera({x: 0, y: 0}, 500, 500, ctx);
 
     registerListeners(canvas);
+    gameContexts = (function(camera) {
+      return {
+        ship: function(inputState) {
+          return {
+            leftClick: function(unit) {
+              if (inputState.mouseTarget == null) { // null means a bad click
+                console.error("Error moving", unit);
+                inputState.actions.LEFTCLICK = false;
+                return
+              } else { // normal path here
+                var move = camera.toWorld(inputState.mouseTarget.x, inputState.mouseTarget.y);
+                inputState.mouseTarget = null;
+                unit.moveTo({x: move[0], y: move[1]});
+                inputState.actions.LEFTCLICK = false;
+                unit.attackMove = false;
+              }
+            },
+            rightClick: function(unit) {
+              if (inputState.mouseTarget == null) { // null means a bad click
+                console.error("Error moving", unit);
+                inputState.actions.RIGHTCLICK = false;
+                return
+              } else { // normal path here
+                var move = camera.toWorld(inputState.mouseTarget.x, inputState.mouseTarget.y);
+                inputState.mouseTarget = null;
+                unit.moveTo({x: move[0], y: move[1]});
+                inputState.actions.RIGHTCLICK = false;
+                unit.attackMove = true;
+              }
+            }
+          }
+        },
+        space: function(inputState) {
+
+        }
+      }
+    })(this.camera);
+    currentContext = gameContexts[ALL_CONTEXTS.SHIP](inputState); 
   };
 
   var registerListeners = function(canvas) {
     canvas.addEventListener('mousedown', function(e) {
       e.preventDefault();
-      if (e.which == 1) { // left
-        inputState.leftClick = true;
-        inputState.hasClick = true;
-      } else if (e.which == 3) {
-        inputState.rightClick = true;
-        inputState.hasClick = true;
-      } else {
-        return
+      var mButton = mouseCodes[e.which];
+      if (mButton !== undefined) {
+        inputState.actions[mButton] = true;
+        inputState.mouseTarget = {x: e.clientX, y: e.clientY};
       }
-      inputState.mouseTarget = {x: e.clientX, y: e.clientY};
     },false);
 
-    canvas.addEventListener('contextmenu', function(e) {
-      e.preventDefault();
-    },false);
+    canvas.addEventListener('contextmenu', function(e) {e.preventDefault();},false);
 
     // just camera testing
     window.addEventListener('keydown', function(e) {
-      if (e.keyCode == 37) {
-        inputState.keyLeft = true;
-      } else if (e.keyCode == 39) {
-        inputState.keyRight = true;
-      } else if (e.keyCode == 32) {
-        inputState.space = true;
+      var button = buttons[e.keyCode];
+      if (button !== undefined) {
+        inputState.actions[button] = true;
       }
     }, false);
+
     window.addEventListener('keyup', function(e) {
-      if (e.keyCode == 37) {
-        inputState.keyLeft = false;
-      } else if (e.keyCode == 39) {
-        inputState.keyRight = false;
-      } else if (e.keyCode == 32) {
-        inputState.space = false;
+      var button = buttons[e.keyCode];
+      if (button !== undefined) {
+        inputState.actions[button] = false;
       }
     }, false);
   }
 
   // Should each game part handle it's own input?
   var handleInput = function(now) {
-    if (inputState.hasClick) {
-      if (inputState.mouseTarget == null) { // null means a bad click
-        console.error("Error moving", this.ship);
-        inputState.leftClick = false;
-        inputState.rightClick = false;
-        return
-      } else { // normal path here
-        var move = this.camera.toWorld(inputState.mouseTarget.x, inputState.mouseTarget.y);
-        inputState.mouseTarget = null;
-        this.ship.moveTo({x: move[0], y: move[1]});
-        inputState.hasClick = false;
-        if (inputState.leftClick) {
-          inputState.leftClick = false;
-          this.ship.attackMove = false;
-        } else if (inputState.rightClick) {
-          inputState.rightClick = false;
-          this.ship.attackMove = true;
-        }
-      }
+    if (inputState.actions.LEFTCLICK) {
+      currentContext.leftClick(this.ship);
+    } else if (inputState.actions.RIGHTCLICK) {
+      currentContext.rightClick(this.ship);
     }
-    if (inputState.space){
+
+    if (inputState.actions.SPACE){
       console.info("Ship location", this.ship.debug());
     }
     this.camera.direction = 0;
-    if (inputState.keyLeft) {
+    if (inputState.actions.RIGHT) {
       console.log('cam move Right');
       this.camera.direction = 1;
     }
-    if (inputState.keyRight) {
+    if (inputState.actions.LEFT) {
       console.log('cam move left');
       this.camera.direction = -1;
     }
