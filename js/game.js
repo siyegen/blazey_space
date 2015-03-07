@@ -40,6 +40,7 @@ function Ship(startPos, ctx) {
   var width = 30;
   var height = 30;
   var acc = 10;
+  var moving = false;
 
   var checkLocation = function(loc) {
     if (loc === undefined) {
@@ -57,12 +58,14 @@ function Ship(startPos, ctx) {
     update: function(mod) {
       var validLocation = checkLocation(this.location);
       if (validLocation === true) {
+        moving = true;
         // TODO: Don't use this for movement, use vectors
         x = util.lerp(x, this.location.x, .1);
         y = util.lerp(y, this.location.y, .1);
 
         if (Math.abs(this.location.x - x) <= 1
           && Math.abs(this.location.y - y) <= 1) {
+          moving = false;
           x = this.location.x;
           y = this.location.y;
           this.location = undefined;
@@ -76,7 +79,15 @@ function Ship(startPos, ctx) {
     render: function() {
       ctx.beginPath();
       ctx.rect(x-width/2,y-width/2,width,height);
-      ctx.fillStyle = "#FF8867";
+      if (moving) {
+        if (this.attackMove) {
+          ctx.fillStyle = "#FF3300";
+        } else {
+          ctx.fillStyle = "#00CC00";
+        }
+      } else {
+        ctx.fillStyle = "#3333FF";
+      }
       ctx.fill();
       ctx.lineWidth = 2;
       ctx.strokeStyle = 'black';
@@ -107,9 +118,21 @@ function Game() {
   };
 
   var registerListeners = function(canvas) {
-    canvas.addEventListener('click', function(e) {
-      inputState.leftClick = true;
+    canvas.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      console.log(e);
+      if (e.which == 1) { // left
+        inputState.leftClick = true;
+      } else if (e.which == 3) {
+        inputState.rightClick = true;
+      } else {
+        return
+      }
       inputState.mouseTarget = {x: e.clientX, y: e.clientY};
+    },false);
+
+    canvas.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
     },false);
 
     // just camera testing
@@ -135,11 +158,17 @@ function Game() {
 
   // Should each game part handle it's own input?
   var handleInput = function(now) {
-    if (inputState.leftClick) {
+    if (inputState.leftClick || inputState.rightClick) {
+      console.log('triggering a move');
       var move = this.camera.toWorld(inputState.mouseTarget.x, inputState.mouseTarget.y);
       this.ship.location = {x: move[0], y: move[1]};
-      console.log('triggering a move');
-      inputState.leftClick = false;
+      if (inputState.leftClick) {
+        inputState.leftClick = false;
+        this.ship.attackMove = false;
+      } else if (inputState.rightClick) {
+        inputState.rightClick = false;
+        this.ship.attackMove = true;
+      }
       inputState.mouseTarget = {};
     }
     if (inputState.space){
