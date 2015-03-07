@@ -55,9 +55,17 @@ function Ship(startPos, ctx) {
     debug: function() {
       return "x=> " + x + " y=> " + y
     },
-    update: function(mod) {
-      var validLocation = checkLocation(this.location);
+    moveTo: function(location) {
+      var validLocation = checkLocation(location);
       if (validLocation === true) {
+        this.location = location;
+      } else if (validLocation === false) { // null is different than false
+        console.error("Can't move there", location);
+        this.location = undefined;
+      }
+    },
+    update: function(mod) {
+      if (this.location) {
         moving = true;
         // TODO: Don't use this for movement, use vectors
         x = util.lerp(x, this.location.x, .1);
@@ -71,11 +79,7 @@ function Ship(startPos, ctx) {
           y = this.location.y;
           this.location = undefined;
         }
-      } else if (validLocation === false) { // null is different than false
-        console.error("Can't move there", this.location);
-        this.location = undefined;
       }
-
     },
     render: function() {
       ctx.beginPath();
@@ -123,8 +127,10 @@ function Game() {
       e.preventDefault();
       if (e.which == 1) { // left
         inputState.leftClick = true;
+        inputState.hasClick = true;
       } else if (e.which == 3) {
         inputState.rightClick = true;
+        inputState.hasClick = true;
       } else {
         return
       }
@@ -158,9 +164,7 @@ function Game() {
 
   // Should each game part handle it's own input?
   var handleInput = function(now) {
-    if (inputState.leftClick || inputState.rightClick) {
-      console.log('triggering a move');
-      console.log(inputState.mouseTarget);
+    if (inputState.hasClick) {
       if (inputState.mouseTarget == null) { // null means a bad click
         console.error("Error moving", this.ship);
         inputState.leftClick = false;
@@ -169,7 +173,8 @@ function Game() {
       } else { // normal path here
         var move = this.camera.toWorld(inputState.mouseTarget.x, inputState.mouseTarget.y);
         inputState.mouseTarget = null;
-        this.ship.location = {x: move[0], y: move[1]};
+        this.ship.moveTo({x: move[0], y: move[1]});
+        inputState.hasClick = false;
         if (inputState.leftClick) {
           inputState.leftClick = false;
           this.ship.attackMove = false;
@@ -200,7 +205,6 @@ function Game() {
 
   var render = function() {
     ctx.save();
-    // ctx.translate(this.camera.x, this.camera.y);
     this.camera.render();
     ctx.clearRect(0, 0, 500, 500);
     ctx.drawImage(bgStars, 0, 0, bgStars.width, bgStars.height);
@@ -209,7 +213,6 @@ function Game() {
   }
 
   var main = function(timeDelta) {
-    // console.log("calling main");
     handleInput();
     update(timeDelta);
     render();
