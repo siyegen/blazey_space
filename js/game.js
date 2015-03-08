@@ -2,6 +2,7 @@ console.log("Hello!");
 
 var bgStars = new Image();
 bgStars.src = "images/star-bg-big.png";
+var tempWidth = 2000;
 
 var util = (function util() {
   return {
@@ -17,18 +18,19 @@ function Camera(startPos, wView, hView, ctx) {
   this.y = startPos.y;
   return {
     toWorld: function(clientX, clientY) {
-      return [clientX - this.x, clientY - this.y];
+      return [clientX - ((wView/2) - this.x), clientY - ((hView/2) - this.y)]
+      // return [this.x - clientX, this.y - clientY];
     },
     update: function(mod) {
-      if (this.direction == 1){
-        this.x += 5;
-      }
-      if (this.direction == -1){
+      if (this.direction == 1) {
         this.x -= 5;
+      }
+      if (this.direction == -1) {
+        this.x += 5;
       }
     },
     render: function() {
-      ctx.translate(this.x, this.y);
+      ctx.translate((wView/2) - this.x, (hView/2) - this.y);
     },
     x: this.x, y: this.y
   }
@@ -45,7 +47,7 @@ function Ship(startPos, ctx) {
   var checkLocation = function(loc) {
     if (loc === undefined) {
       return null
-    } else if (loc.x < 0+width/2 || loc.x > 2000-width/2) {
+    } else if (loc.x < 0+width/2 || loc.x > tempWidth-width/2) {
       return false
     }
     return true
@@ -54,6 +56,9 @@ function Ship(startPos, ctx) {
   return {
     debug: function() {
       return "x=> " + x + " y=> " + y
+    },
+    getXY: function() {
+      return {x: x, y: y}
     },
     moveTo: function(location) {
       var validLocation = checkLocation(location);
@@ -143,33 +148,33 @@ function Game() {
     document.body.appendChild(canvas);
 
     this.ship = new Ship({x: 250, y: 15}, ctx);
-    this.camera = new Camera({x: 0, y: 0}, 500, 500, ctx);
+    this.camera = new Camera({x: 250, y: 250}, 500, 500, ctx);
 
     registerListeners(canvas);
     gameContexts = (function(camera) {
       return {
         ship: function(inputState) {
           return {
-            leftClick: function(unit) {
-              if (inputState.mouseTarget == null) { // null means a bad click
+            leftClick: function(unit, target) {
+              if (target == null) { // null means a bad click
                 console.error("Error moving", unit);
                 inputState.actions.LEFTCLICK = false;
                 return
               } else { // normal path here
-                var move = camera.toWorld(inputState.mouseTarget.x, inputState.mouseTarget.y);
+                var move = camera.toWorld(target.x, target.y);
                 inputState.mouseTarget = null;
                 unit.moveTo({x: move[0], y: move[1]});
                 inputState.actions.LEFTCLICK = false;
                 unit.attackMove = false;
               }
             },
-            rightClick: function(unit) {
-              if (inputState.mouseTarget == null) { // null means a bad click
+            rightClick: function(unit, target) {
+              if (target == null) { // null means a bad click
                 console.error("Error moving", unit);
                 inputState.actions.RIGHTCLICK = false;
                 return
               } else { // normal path here
-                var move = camera.toWorld(inputState.mouseTarget.x, inputState.mouseTarget.y);
+                var move = camera.toWorld(target.x, target.y);
                 inputState.mouseTarget = null;
                 unit.moveTo({x: move[0], y: move[1]});
                 inputState.actions.RIGHTCLICK = false;
@@ -179,11 +184,17 @@ function Game() {
           }
         },
         space: function(inputState) {
-
+          return {
+            leftClick: function(target) {
+              console.log('space left click');
+              console.log(target);
+              inputState.actions.LEFTCLICK = false;
+            }
+          }
         }
       }
     })(this.camera);
-    currentContext = gameContexts[ALL_CONTEXTS.SHIP](inputState); 
+    currentContext = ALL_CONTEXTS.SPACE;
   };
 
   var registerListeners = function(canvas) {
@@ -216,14 +227,32 @@ function Game() {
 
   // Should each game part handle it's own input?
   var handleInput = function(now) {
-    if (inputState.actions.LEFTCLICK) {
-      currentContext.leftClick(this.ship);
-    } else if (inputState.actions.RIGHTCLICK) {
-      currentContext.rightClick(this.ship);
+    if (currentContext === ALL_CONTEXTS.SHIP) {
+      if (inputState.actions.LEFTCLICK) {
+        gameContexts[currentContext](inputState).leftClick(this.ship, inputState.mouseTarget);
+      } else if (inputState.actions.RIGHTCLICK) {
+        gameContexts[currentContext](inputState).rightClick(this.ship, inputState.mouseTarget);
+      }
+      if (inputState.actions.ESC) {
+        currentContext = ALL_CONTEXTS.SPACE;
+        inputState.actions.ESC = false;
+      }
+    } else if(currentContext === ALL_CONTEXTS.SPACE) {
+      if (inputState.actions.LEFTCLICK) {
+        gameContexts[currentContext](inputState).leftClick(inputState.mouseTarget);
+      }
+      if (inputState.actions.ESC) {
+        currentContext = ALL_CONTEXTS.SHIP;
+        inputState.actions.ESC = false;
+      }
+      inputState.mouseTarget = null;
     }
 
     if (inputState.actions.SPACE){
       console.info("Ship location", this.ship.debug());
+      console.info("camera location", this.camera);
+      var xy = this.ship.getXY();
+      console.info("to world", this.camera.toWorld(xy.x, xy.y));
     }
     this.camera.direction = 0;
     if (inputState.actions.RIGHT) {
@@ -239,6 +268,14 @@ function Game() {
   var update = function(timeDelta) {
     this.ship.update(timeDelta);
     this.camera.update(timeDelta);
+    // update tracker
+    if (inView(this.ship.x, this.ship.y)) {
+      console.log("in view", this.ship);
+    }
+  };
+
+  var inView = function(x, y) {
+    // console.log(this.camera);
   }
 
   var render = function() {
