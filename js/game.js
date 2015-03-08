@@ -23,16 +23,24 @@ function Camera(startPos, wView, hView, ctx) {
     },
     update: function(mod) {
       if (this.direction == 1) {
-        this.x -= 5;
+        this.x += 5;
       }
       if (this.direction == -1) {
-        this.x += 5;
+        this.x -= 5;
       }
     },
     render: function() {
       ctx.translate((wView/2) - this.x, (hView/2) - this.y);
     },
-    x: this.x, y: this.y
+    x: this.x, y: this.y,
+    inside: function(x, y) {
+      if (x > this.x - (wView/2) && x < this.x + (wView/2)) {
+        if (y > this.y - (hView/2) && y < this.y + (hView/2)) {
+          return true
+        }
+      }
+      return false
+    }
   }
 }
 
@@ -69,6 +77,14 @@ function Ship(startPos, ctx) {
         this.location = undefined;
       }
     },
+    inside: function(x2, y2) {
+      if (x2 > x - (width/2) && x2 < x + (width/2)) {
+        if (y2 > y - (height/2) && y2 < y + (height/2)) {
+          return true
+        }
+      }
+      return false
+    },
     update: function(mod) {
       if (this.location) {
         moving = true;
@@ -95,6 +111,8 @@ function Ship(startPos, ctx) {
         } else {
           ctx.fillStyle = "#00CC00";
         }
+      } else if (!this.selected) {
+        ctx.fillStyle = "#717999";
       } else {
         ctx.fillStyle = "#3333FF";
       }
@@ -138,6 +156,9 @@ function Game() {
   var gameContexts;
   var currentContext = null;
 
+  var allUnits = [];
+  var selectedUnit = null;
+
   var init = function() {
     this.requestAnimationFrame = window.requestAnimationFrame;
 
@@ -149,6 +170,7 @@ function Game() {
 
     this.ship = new Ship({x: 250, y: 15}, ctx);
     this.camera = new Camera({x: 250, y: 250}, 500, 500, ctx);
+    allUnits.push(this.ship);
 
     registerListeners(canvas);
     gameContexts = (function(camera) {
@@ -187,8 +209,20 @@ function Game() {
           return {
             leftClick: function(target) {
               console.log('space left click');
-              console.log(target);
               inputState.actions.LEFTCLICK = false;
+              var worldTarget = camera.toWorld(target.x, target.y);
+              console.log(target, worldTarget);
+              for(var i=0; i<allUnits.length; i++) {
+                if (allUnits[i].isVisible) {
+                  if (allUnits[i].inside(worldTarget[0], worldTarget[1])) {
+                    console.log("selected", allUnits[i]);
+                    selectedUnit = allUnits[i];
+                    selectedUnit.selected = true;
+                    currentContext = ALL_CONTEXTS.SHIP;
+                    break;
+                  }
+                }
+              }
             }
           }
         }
@@ -229,31 +263,32 @@ function Game() {
   var handleInput = function(now) {
     if (currentContext === ALL_CONTEXTS.SHIP) {
       if (inputState.actions.LEFTCLICK) {
-        gameContexts[currentContext](inputState).leftClick(this.ship, inputState.mouseTarget);
+        gameContexts[currentContext](inputState).leftClick(selectedUnit, inputState.mouseTarget);
       } else if (inputState.actions.RIGHTCLICK) {
-        gameContexts[currentContext](inputState).rightClick(this.ship, inputState.mouseTarget);
+        gameContexts[currentContext](inputState).rightClick(selectedUnit, inputState.mouseTarget);
       }
       if (inputState.actions.ESC) {
         currentContext = ALL_CONTEXTS.SPACE;
         inputState.actions.ESC = false;
+        if (selectedUnit) {
+          selectedUnit.selected = false;
+        }
+        selectedUnit = null;
       }
     } else if(currentContext === ALL_CONTEXTS.SPACE) {
       if (inputState.actions.LEFTCLICK) {
         gameContexts[currentContext](inputState).leftClick(inputState.mouseTarget);
       }
-      if (inputState.actions.ESC) {
-        currentContext = ALL_CONTEXTS.SHIP;
-        inputState.actions.ESC = false;
-      }
       inputState.mouseTarget = null;
     }
 
     if (inputState.actions.SPACE){
-      console.info("Ship location", this.ship.debug());
+      if (selectedUnit) {
+        console.info("Ship location", selectedUnit.debug());
+      }
       console.info("camera location", this.camera);
-      var xy = this.ship.getXY();
-      console.info("to world", this.camera.toWorld(xy.x, xy.y));
     }
+
     this.camera.direction = 0;
     if (inputState.actions.RIGHT) {
       console.log('cam move Right');
@@ -269,14 +304,16 @@ function Game() {
     this.ship.update(timeDelta);
     this.camera.update(timeDelta);
     // update tracker
-    if (inView(this.ship.x, this.ship.y)) {
-      console.log("in view", this.ship);
+    for(var i = 0; i< allUnits.length; i++) {
+      var xy = allUnits[i].getXY();
+      if (this.camera.inside(xy.x, xy.y)) {
+        // ship(s) can be selected
+        allUnits[i].isVisible = true;
+      } else {
+        allUnits[i].isVisible = false;
+      }
     }
   };
-
-  var inView = function(x, y) {
-    // console.log(this.camera);
-  }
 
   var render = function() {
     ctx.save();
