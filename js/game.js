@@ -12,38 +12,42 @@ var util = (function util() {
   }
 })();
 
+// need a better pattern here
 function Camera(startPos, wView, hView, ctx) {
   this.direction = 0;
   this.x = startPos.x;
   this.y = startPos.y;
   this.scale = 1;
-  return {
-    toWorld: function(clientX, clientY) {
-      return [clientX - ((wView/2) - this.x), clientY - ((hView/2) - this.y)]
-      // return [this.x - clientX, this.y - clientY];
-    },
-    update: function(mod) {
-      if (this.direction == 1) {
-        this.x += 5;
-      }
-      if (this.direction == -1) {
-        this.x -= 5;
-      }
-    },
-    render: function() {
-      ctx.scale(this.scale, this.scale);
-      ctx.translate((wView/2) - this.x, (hView/2) - this.y);
-    },
-    x: this.x, y: this.y,
-    inside: function(x, y) {
-      if (x > this.x - (wView/2) && x < this.x + (wView/2)) {
-        if (y > this.y - (hView/2) && y < this.y + (hView/2)) {
-          return true
-        }
-      }
-      return false
+
+  this.toWorld = function(clientX, clientY) {
+    return [
+      clientX/this.scale - ((wView/2) - this.x),
+      clientY/this.scale - ((hView/2) - this.y)
+    ]
+  };
+
+  this.update = function(mod) {
+    if (this.direction == 1) {
+      this.x += 5;
     }
-  }
+    if (this.direction == -1) {
+      this.x -= 5;
+    }
+  };
+
+  this.render = function() {
+    ctx.scale(this.scale, this.scale);
+    ctx.translate((wView/2) - this.x, (hView/2) - this.y);
+  };
+
+  this.inside = function(x, y) {
+    if (x > this.x - (wView/2) && x < this.x + (wView/2)) {
+      if (y > this.y - (hView/2) && y < this.y + (hView/2)) {
+        return true
+      }
+    }
+    return false
+  };
 }
 
 function Ship(startPos, ctx) {
