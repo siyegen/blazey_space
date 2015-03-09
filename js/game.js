@@ -16,6 +16,7 @@ function Camera(startPos, wView, hView, ctx) {
   this.direction = 0;
   this.x = startPos.x;
   this.y = startPos.y;
+  this.scale = 1;
   return {
     toWorld: function(clientX, clientY) {
       return [clientX - ((wView/2) - this.x), clientY - ((hView/2) - this.y)]
@@ -30,6 +31,7 @@ function Camera(startPos, wView, hView, ctx) {
       }
     },
     render: function() {
+      ctx.scale(this.scale, this.scale);
       ctx.translate((wView/2) - this.x, (hView/2) - this.y);
     },
     x: this.x, y: this.y,
@@ -141,7 +143,8 @@ function Game() {
     '32': 'SPACE',
     '27': 'ESC',
     '37': 'LEFT',
-    '39': 'RIGHT'
+    '39': 'RIGHT',
+    '90': 'Z'
   };
   var inputState = {
     actions: {
@@ -150,7 +153,8 @@ function Game() {
       SPACE: false,
       LEFT: false,
       RIGHT: false,
-      ESC: false
+      ESC: false,
+      Z: false
     }
   };
   var gameContexts;
@@ -287,6 +291,16 @@ function Game() {
         console.info("Ship location", selectedUnit.debug());
       }
       console.info("camera location", this.camera);
+    }
+
+    if (inputState.actions.Z){
+      console.info("Zoom");
+      if (this.camera.scale == 1) {
+        this.camera.scale = 2;
+      } else {
+        this.camera.scale = 1;
+      }
+      inputState.actions.Z = false;
     }
 
     this.camera.direction = 0;
