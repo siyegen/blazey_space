@@ -4,6 +4,9 @@ var bgStars = new Image();
 bgStars.src = "images/star-bg-big.png";
 var tempWidth = 2000;
 
+var shipImg = new Image();
+shipImg.src = "images/ship1.png";
+
 var util = (function util() {
   return {
     lerp: function(v0, v1, t) {
@@ -60,13 +63,18 @@ function Camera(startPos, wView, hView, ctx) {
   };
 }
 
-function Ship(startPos, ctx) {
+function Ship(startPos, img, ctx) {
   var x = startPos.x;
   var y = startPos.y;
-  var width = 30;
-  var height = 30;
+  // var width = img.width;
+  // var height = img.height; fix me
+  var width = 64;
+  var height = 64;
   var acc = 10;
   var moving = false;
+  var img = img;
+
+  console.log(img);
 
   var checkLocation = function(loc) {
     if (loc === undefined) {
@@ -121,24 +129,28 @@ function Ship(startPos, ctx) {
     },
     render: function() {
       ctx.beginPath();
+      // if (moving) {
+      //   if (this.attackMove) {
+      //     ctx.fillStyle = "#FF3300";
+      //   } else {
+      //     ctx.fillStyle = "#00CC00";
+      //   }
+      // } else if (!this.selected) {
+      //   ctx.fillStyle = "#717999";
+      // } else {
+      //   ctx.fillStyle = "#3333FF";
+      // }
+      ctx.drawImage(shipImg, x-width/2, y-width/2,width,height);
       ctx.rect(x-width/2,y-width/2,width,height);
-      if (moving) {
-        if (this.attackMove) {
-          ctx.fillStyle = "#FF3300";
-        } else {
-          ctx.fillStyle = "#00CC00";
-        }
-      } else if (!this.selected) {
-        ctx.fillStyle = "#717999";
-      } else {
-        ctx.fillStyle = "#3333FF";
+      if (this.selected) {
+        ctx.fillStyle = "rgba(51, 51, 255, 0.3)";
+        ctx.fill();
       }
-      ctx.fill();
       ctx.lineWidth = 2;
-      ctx.strokeStyle = 'black';
+      ctx.strokeStyle = 'white';
       ctx.stroke();
       // debug, draw dot
-      ctx.fillStyle = "#4466FF";
+      ctx.fillStyle = "yellow";
       ctx.fillRect(x-1, y-1, 2, 2);
     }
   }
@@ -188,8 +200,8 @@ function Game() {
     ctx = canvas.getContext('2d');
     document.body.appendChild(canvas);
 
-    allUnits.push(new Ship({x: 250, y: 15}, ctx));
-    allUnits.push(new Ship({x: 450, y: 15}, ctx));
+    allUnits.push(new Ship({x: 250, y: 15}, shipImg, ctx));
+    allUnits.push(new Ship({x: 450, y: 15}, shipImg, ctx));
     this.camera = new Camera({x: viewPort.w/2, y: viewPort.h/2}, viewPort.w, viewPort.h, ctx);
 
     registerListeners(canvas);
