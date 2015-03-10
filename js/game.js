@@ -28,6 +28,14 @@ function Camera(startPos, wView, hView, ctx) {
     ]
   };
 
+  this.zoom = function() {
+    if (this.scale == 1) {
+      this.scale = 2;
+    } else {
+      this.scale = 2;
+    }
+  };
+
   this.update = function(mod) {
     if (this.direction == 1) {
       this.x += 5;
@@ -180,9 +188,9 @@ function Game() {
     ctx = canvas.getContext('2d');
     document.body.appendChild(canvas);
 
-    this.ship = new Ship({x: 250, y: 15}, ctx);
+    allUnits.push(new Ship({x: 250, y: 15}, ctx));
+    allUnits.push(new Ship({x: 450, y: 15}, ctx));
     this.camera = new Camera({x: viewPort.w/2, y: viewPort.h/2}, viewPort.w, viewPort.h, ctx);
-    allUnits.push(this.ship);
 
     registerListeners(canvas);
     gameContexts = (function(camera) {
@@ -323,10 +331,10 @@ function Game() {
   }
 
   var update = function(timeDelta) {
-    this.ship.update(timeDelta);
     this.camera.update(timeDelta);
     // update tracker
     for(var i = 0; i< allUnits.length; i++) {
+      allUnits[i].update(timeDelta);
       var xy = allUnits[i].getXY();
       if (this.camera.inside(xy.x, xy.y, allUnits[i].width, allUnits[i].height)) {
         // ship(s) can be selected
@@ -342,7 +350,6 @@ function Game() {
     this.camera.render();
     ctx.clearRect(0, 0, this.camera.width, this.camera.height);
     ctx.drawImage(bgStars, 0, 0, bgStars.width, bgStars.height);
-    // this.ship.render();
     for(var i=0; i<allUnits.length; i++) {
       if (allUnits[i].isVisible) {
         allUnits[i].render();
