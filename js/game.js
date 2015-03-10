@@ -11,9 +11,16 @@ var util = (function util() {
   return {
     lerp: function(v0, v1, t) {
       return (1-t)*v0 + t*v1;
+    },
+    sign: function(x) {
+      return x && x / Math.abs(x);
     }
   }
 })();
+
+if (Math.sign) {
+  util.sign = Math.sign;
+}
 
 // need a better pattern here
 function Camera(startPos, wView, hView, ctx) {
@@ -70,7 +77,9 @@ function Ship(startPos, img, ctx) {
   // var height = img.height; fix me
   var width = 64;
   var height = 64;
-  var acc = 10;
+  var ACCELERATION = 100;
+  var maxSpeed = 500;
+  var currentSpeed = 0;
   var moving = false;
   var img = img;
 
@@ -113,6 +122,20 @@ function Ship(startPos, img, ctx) {
     update: function(mod) {
       if (this.location) {
         moving = true;
+        // d = vt + (1/2)at^2
+        // determine + or - for x and y
+        var xDir = util.sign(this.location.x - x);
+        var yDir = util.sign(this.location.y - y);
+
+        // debugger
+        // x = (0.5*(ACCELERATION*xDir)*(mod*mod)+(currentSpeed*mod)+x);
+        // y = (0.5*(ACCELERATION*yDir)*(mod*mod)+(currentSpeed*mod)+y);
+
+        // currentSpeed = ACCELERATION*mod+currentSpeed;
+        // if (currentSpeed > maxSpeed) { // clamp speed, no more acc
+        //   currentSpeed = maxSpeed;
+        // }
+
         // TODO: Don't use this for movement, use vectors
         x = util.lerp(x, this.location.x, .1);
         y = util.lerp(y, this.location.y, .1);
@@ -200,8 +223,8 @@ function Game() {
     ctx = canvas.getContext('2d');
     document.body.appendChild(canvas);
 
-    allUnits.push(new Ship({x: 250, y: 15}, shipImg, ctx));
-    allUnits.push(new Ship({x: 450, y: 15}, shipImg, ctx));
+    allUnits.push(new Ship({x: 250, y: 80}, shipImg, ctx));
+    allUnits.push(new Ship({x: 450, y: 80}, shipImg, ctx));
     this.camera = new Camera({x: viewPort.w/2, y: viewPort.h/2}, viewPort.w, viewPort.h, ctx);
 
     registerListeners(canvas);
@@ -372,8 +395,10 @@ function Game() {
 
   var main = function(timeDelta) {
     handleInput();
-    update(timeDelta);
+    var now = Date.now();
+    update((now-this.then)/1000); // ts
     render();
+    this.then = now;
     this.requestAnimationFrame(main);
   };
 
@@ -381,6 +406,7 @@ function Game() {
   return {
     start: function() {
       init();
+      this.then = Date.now();
       main(Date.now());
     }
   }
