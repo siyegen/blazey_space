@@ -17,6 +17,8 @@ function Camera(startPos, wView, hView, ctx) {
   this.direction = 0;
   this.x = startPos.x;
   this.y = startPos.y;
+  this.width = wView;
+  this.height = wView;
   this.scale = 1;
 
   this.toWorld = function(clientX, clientY) {
@@ -169,15 +171,16 @@ function Game() {
 
   var init = function() {
     this.requestAnimationFrame = window.requestAnimationFrame;
+    var viewPort = {w: 1000, h: 700};
 
     var canvas = document.createElement('canvas');
-    canvas.width = 500;
-    canvas.height = 500;
+    canvas.width = viewPort.w;
+    canvas.height = viewPort.h;
     ctx = canvas.getContext('2d');
     document.body.appendChild(canvas);
 
     this.ship = new Ship({x: 250, y: 15}, ctx);
-    this.camera = new Camera({x: 250, y: 250}, 500, 500, ctx);
+    this.camera = new Camera({x: viewPort.w/2, y: viewPort.h/2}, viewPort.w, viewPort.h, ctx);
     allUnits.push(this.ship);
 
     registerListeners(canvas);
@@ -336,7 +339,7 @@ function Game() {
   var render = function() {
     ctx.save();
     this.camera.render();
-    ctx.clearRect(0, 0, 500, 500);
+    ctx.clearRect(0, 0, this.camera.width, this.camera.height);
     ctx.drawImage(bgStars, 0, 0, bgStars.width, bgStars.height);
     this.ship.render();
     ctx.restore();
