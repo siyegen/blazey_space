@@ -42,9 +42,9 @@ function Camera(startPos, wView, hView, ctx) {
     ctx.translate((wView/2) - this.x, (hView/2) - this.y);
   };
 
-  this.inside = function(x, y) {
-    if (x > this.x - (wView/2) && x < this.x + (wView/2)) {
-      if (y > this.y - (hView/2) && y < this.y + (hView/2)) {
+  this.inside = function(x, y, width, height) {
+    if (x + width/2 > this.x - (wView/2) && x - width/2 < this.x + (wView/2)) {
+      if (y + height/2 > this.y - (hView/2) && y - height/2 < this.y + (hView/2)) {
         return true
       }
     }
@@ -73,6 +73,7 @@ function Ship(startPos, ctx) {
     debug: function() {
       return "x=> " + x + " y=> " + y
     },
+    width: width, height: height,
     getXY: function() {
       return {x: x, y: y}
     },
@@ -327,7 +328,7 @@ function Game() {
     // update tracker
     for(var i = 0; i< allUnits.length; i++) {
       var xy = allUnits[i].getXY();
-      if (this.camera.inside(xy.x, xy.y)) {
+      if (this.camera.inside(xy.x, xy.y, allUnits[i].width, allUnits[i].height)) {
         // ship(s) can be selected
         allUnits[i].isVisible = true;
       } else {
@@ -341,7 +342,12 @@ function Game() {
     this.camera.render();
     ctx.clearRect(0, 0, this.camera.width, this.camera.height);
     ctx.drawImage(bgStars, 0, 0, bgStars.width, bgStars.height);
-    this.ship.render();
+    // this.ship.render();
+    for(var i=0; i<allUnits.length; i++) {
+      if (allUnits[i].isVisible) {
+        allUnits[i].render();
+      }
+    }
     ctx.restore();
   }
 
