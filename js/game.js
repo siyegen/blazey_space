@@ -57,12 +57,18 @@ function Camera(startPos, wView, hView, ctx) {
 
   this.render = function() {
     ctx.scale(this.scale, this.scale);
+    // var tempW = wView/this.scale/2; 
     ctx.translate((wView/2) - this.x, (hView/2) - this.y);
   };
 
   this.inside = function(x, y, width, height) {
-    if (x + width/2 > this.x - (wView/2) && x - width/2 < this.x + (wView/2)) {
-      if (y + height/2 > this.y - (hView/2) && y - height/2 < this.y + (hView/2)) {
+    // target x + 1/2 width of target should be great than left bound
+    // left bound = camera.x (center) - width/2
+    // width should be / by scale
+    if (x + width/2/this.scale > this.x - ((this.width/this.scale)/2)
+      && x - width/2/this.scale < this.x + ((this.width/this.scale)/2)) {
+      if (y + height/2/this.scale > this.y - ((this.height/this.scale)/2)
+        && y - height/2/this.scale < this.y + ((this.height/this.scale)/2)) {
         return true
       }
     }
@@ -82,8 +88,6 @@ function Ship(startPos, img, ctx) {
   var currentSpeed = 0;
   var moving = false;
   var img = img;
-
-  console.log(img);
 
   var checkLocation = function(loc) {
     if (loc === undefined) {
@@ -338,6 +342,10 @@ function Game() {
         console.info("Ship location", selectedUnit.debug());
       }
       console.info("camera location", this.camera);
+      debugger;
+      console.info("camera left", this.camera.x - ((this.camera.width/this.camera.scale)/2));
+      console.info("camera right", this.camera.x + ((this.camera.width/this.camera.scale)/2));
+      inputState.actions.SPACE = false;
     }
 
     if (inputState.actions.Z){
