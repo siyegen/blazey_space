@@ -40,9 +40,9 @@ function Camera(startPos, wView, hView, ctx) {
 
   this.zoom = function() {
     if (this.scale == 1) {
-      this.scale = 2;
+      this.scale = 0.5;
     } else {
-      this.scale = 2;
+      this.scale = 1;
     }
   };
 
@@ -232,18 +232,13 @@ function Game() {
       return {
         ship: function(inputState) {
           return {
-            leftClick: function(unit, target) {
-              if (target == null) { // null means a bad click
-                console.error("Error moving", unit);
-                inputState.actions.LEFTCLICK = false;
-                return
-              } else { // normal path here
-                var move = camera.toWorld(target.x, target.y);
-                inputState.mouseTarget = null;
-                unit.moveTo({x: move[0], y: move[1]});
-                inputState.actions.LEFTCLICK = false;
-                unit.attackMove = false;
+            leftClick: function(currentUnit) {
+              currentContext = ALL_CONTEXTS.SPACE;
+              inputState.actions.LEFTCLICK = false;
+              if (currentUnit) {
+                currentUnit.selected = false;
               }
+              currentUnit = null;
             },
             rightClick: function(unit, target) {
               if (target == null) { // null means a bad click
@@ -319,7 +314,8 @@ function Game() {
     if (currentContext === ALL_CONTEXTS.SHIP) {
       if (inputState.actions.LEFTCLICK) {
         gameContexts[currentContext](inputState).leftClick(selectedUnit, inputState.mouseTarget);
-      } else if (inputState.actions.RIGHTCLICK) {
+      }
+      if (inputState.actions.RIGHTCLICK) {
         gameContexts[currentContext](inputState).rightClick(selectedUnit, inputState.mouseTarget);
       }
       if (inputState.actions.ESC) {
@@ -346,11 +342,7 @@ function Game() {
 
     if (inputState.actions.Z){
       console.info("Zoom");
-      if (this.camera.scale == 1) {
-        this.camera.scale = 2;
-      } else {
-        this.camera.scale = 1;
-      }
+      this.camera.zoom();
       inputState.actions.Z = false;
     }
 
@@ -383,7 +375,8 @@ function Game() {
   var render = function() {
     ctx.save();
     this.camera.render();
-    ctx.clearRect(0, 0, this.camera.width, this.camera.height);
+    // clearing screen and redrawing BG, should move to canvas
+    ctx.clearRect(0, 0, this.camera.width/this.camera.scale, this.camera.height/this.camera.scale);
     ctx.drawImage(bgStars, 0, 0, bgStars.width, bgStars.height);
     for(var i=0; i<allUnits.length; i++) {
       if (allUnits[i].isVisible) {
