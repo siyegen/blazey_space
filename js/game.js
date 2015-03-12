@@ -24,7 +24,7 @@ if (Math.sign) {
 
 // need a better pattern here
 function Camera(startPos, wView, hView, ctx) {
-  this.direction = 0;
+  this.direction = {x: 0, y: 0};
   this.x = startPos.x;
   this.y = startPos.y;
   this.width = wView;
@@ -48,11 +48,17 @@ function Camera(startPos, wView, hView, ctx) {
   };
 
   this.update = function(mod) {
-    if (this.direction == 1) {
+    if (this.direction.x == 1) {
       this.x += 5;
     }
-    if (this.direction == -1) {
+    if (this.direction.x == -1) {
       this.x -= 5;
+    }
+    if (this.direction.y == 1) {
+      this.y += 5;
+    }
+    if (this.direction.y == -1) {
+      this.y -= 5;
     }
   };
 
@@ -200,6 +206,8 @@ function Game() {
     '27': 'ESC',
     '37': 'LEFT',
     '39': 'RIGHT',
+    '38': 'UP',
+    '40': 'DOWN',
     '90': 'Z'
   };
   var inputState = {
@@ -209,6 +217,8 @@ function Game() {
       SPACE: false,
       LEFT: false,
       RIGHT: false,
+      UP: false,
+      DOWN: false,
       ESC: false,
       Z: false
     }
@@ -357,14 +367,23 @@ function Game() {
       inputState.actions.Z = false;
     }
 
-    this.camera.direction = 0;
+    this.camera.direction.x = 0;
+    this.camera.direction.y = 0;
     if (inputState.actions.RIGHT) {
       console.log('cam move Right');
-      this.camera.direction = 1;
+      this.camera.direction.x = 1;
     }
     if (inputState.actions.LEFT) {
       console.log('cam move left');
-      this.camera.direction = -1;
+      this.camera.direction.x = -1;
+    }
+    if (inputState.actions.UP) {
+      console.log('cam move left');
+      this.camera.direction.y = -1;
+    }
+    if (inputState.actions.DOWN) {
+      console.log('cam move Right');
+      this.camera.direction.y = 1;
     }
   }
 
