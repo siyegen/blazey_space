@@ -28,13 +28,14 @@ function Camera(startPos, wView, hView, ctx) {
   this.x = startPos.x;
   this.y = startPos.y;
   this.width = wView;
-  this.height = wView;
+  this.height = hView;
   this.scale = 1;
 
   this.toWorld = function(clientX, clientY) {
+    debugger;
     return [
-      clientX/this.scale - ((wView/2) - this.x),
-      clientY/this.scale - ((hView/2) - this.y)
+      clientX/this.scale - ((wView/this.scale/2) - this.x),
+      clientY/this.scale - ((hView/this.scale/2) - this.y)
     ]
   };
 
@@ -56,9 +57,10 @@ function Camera(startPos, wView, hView, ctx) {
   };
 
   this.render = function() {
+    // Apply the scale first
     ctx.scale(this.scale, this.scale);
-    // var tempW = wView/this.scale/2; 
-    ctx.translate((wView/2) - this.x, (hView/2) - this.y);
+    // Move the scene, in relation to the middle of the viewport ()
+    ctx.translate(this.width/this.scale/2 - this.x, (this.height/this.scale/2) - this.y);
   };
 
   this.inside = function(x, y, width, height) {
@@ -346,6 +348,7 @@ function Game() {
       console.info("camera left", this.camera.x - ((this.camera.width/this.camera.scale)/2));
       console.info("camera right", this.camera.x + ((this.camera.width/this.camera.scale)/2));
       inputState.actions.SPACE = false;
+      console.info("clearing rect", 0, 0, this.camera.width/this.camera.scale, this.camera.height/this.camera.scale);
     }
 
     if (inputState.actions.Z){
@@ -382,15 +385,17 @@ function Game() {
 
   var render = function() {
     ctx.save();
-    this.camera.render();
     // clearing screen and redrawing BG, should move to canvas
     ctx.clearRect(0, 0, this.camera.width/this.camera.scale, this.camera.height/this.camera.scale);
+    this.camera.render();
     ctx.drawImage(bgStars, 0, 0, bgStars.width, bgStars.height);
     for(var i=0; i<allUnits.length; i++) {
       if (allUnits[i].isVisible) {
         allUnits[i].render();
       }
     }
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(this.camera.x-2, this.camera.y-2, 4, 4);
     ctx.restore();
   }
 
