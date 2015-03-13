@@ -14,6 +14,9 @@ var util = (function util() {
     },
     sign: function(x) {
       return x && x / Math.abs(x);
+    },
+    roundToTwo: function(num) {    
+      return +(Math.round(num + "e+2")  + "e-2");
     }
   }
 })();
@@ -55,7 +58,6 @@ function Camera(startPos, wView, hView, ctx) {
   this.scale = 1;
 
   this.toWorld = function(clientX, clientY) {
-    debugger;
     return [
       clientX/this.scale - ((wView/this.scale/2) - this.x),
       clientY/this.scale - ((hView/this.scale/2) - this.y)
@@ -378,7 +380,6 @@ function Game() {
         console.info("Ship location", selectedUnit.debug());
       }
       console.info("camera location", this.camera);
-      debugger;
       console.info("camera left", this.camera.x - ((this.camera.width/this.camera.scale)/2));
       console.info("camera right", this.camera.x + ((this.camera.width/this.camera.scale)/2));
       inputState.actions.SPACE = false;
@@ -426,6 +427,7 @@ function Game() {
     }
   };
 
+  // Should be a "Stage" object that is the composer for rendering
   var render = function() {
     ctx.save();
     // clearing screen and redrawing BG, should move to canvas
@@ -439,8 +441,30 @@ function Game() {
     }
     ctx.fillStyle = "yellow";
     ctx.fillRect(this.camera.x-2, this.camera.y-2, 4, 4);
+
+    // draw HEX around camera
+    ctx.beginPath();
+    var startHex = hexCorner([this.camera.x, this.camera.y], 32, 0);
+    // // console.log(startHex);
+    var lastPoint = startHex;
+    ctx.moveTo(startHex[0], startHex[1]);
+    for(var i=1; i<=6; i++) {
+      var currHex = hexCorner([this.camera.x, this.camera.y], 32, i);
+      ctx.lineTo(currHex[0], currHex[1]);
+      startHex = currHex;
+    }
+    ctx.strokeStyle = "rgba(0, 203, 255, 0.5)";
+
+    ctx.stroke();
     ctx.restore();
-  }
+  };
+
+  var hexCorner = function(center, size, i) {
+    return [
+      Math.round(center[0] + size * Math.cos(i * 2 * Math.PI / 6)),
+      Math.round(center[1]+ size * Math.sin(i * 2 * Math.PI / 6))
+    ];
+  };
 
   var main = function(timeDelta) {
     handleInput();
