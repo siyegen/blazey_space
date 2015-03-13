@@ -22,6 +22,29 @@ if (Math.sign) {
   util.sign = Math.sign;
 }
 
+function Level(width, height, ctx) {
+  var tileSize = 64;
+  var hLines = Math.floor(height / tileSize)+1; // run left to right
+  var vLines = Math.floor(width / tileSize)+1; // run top to bottom
+  console.info("lines", hLines, vLines);
+  // use to position grid, has *bounds*
+  // has titled bg info as well.
+  this.render = function() {
+    ctx.drawImage(bgStars, 0, 0, width, height);
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(0, 203, 255, 0.5)";
+    for(var i=0; i<hLines; i++) {
+      ctx.moveTo(0, i*tileSize);
+      ctx.lineTo(width, i*tileSize);
+    }
+    for(var i=0; i<vLines; i++) {
+      ctx.moveTo(i*tileSize, 0);
+      ctx.lineTo(i*tileSize, height);
+    }
+    ctx.stroke()
+  }
+}
+
 // need a better pattern here
 function Camera(startPos, wView, hView, ctx) {
   this.direction = {x: 0, y: 0};
@@ -41,7 +64,7 @@ function Camera(startPos, wView, hView, ctx) {
 
   this.zoom = function() {
     if (this.scale == 1) {
-      this.scale = 0.5;
+      this.scale = 0.75;
     } else {
       this.scale = 1;
     }
@@ -242,6 +265,7 @@ function Game() {
     allUnits.push(new Ship({x: 250, y: 80}, shipImg, ctx));
     allUnits.push(new Ship({x: 450, y: 80}, shipImg, ctx));
     this.camera = new Camera({x: viewPort.w/2, y: viewPort.h/2}, viewPort.w, viewPort.h, ctx);
+    this.level = new Level(2000, 700, ctx);
 
     registerListeners(canvas);
     gameContexts = (function(camera) {
@@ -407,7 +431,7 @@ function Game() {
     // clearing screen and redrawing BG, should move to canvas
     ctx.clearRect(0, 0, this.camera.width/this.camera.scale, this.camera.height/this.camera.scale);
     this.camera.render();
-    ctx.drawImage(bgStars, 0, 0, bgStars.width, bgStars.height);
+    this.level.render();
     for(var i=0; i<allUnits.length; i++) {
       if (allUnits[i].isVisible) {
         allUnits[i].render();
