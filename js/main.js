@@ -2,28 +2,10 @@ console.log("Hello!");
 
 var bgStars = new Image();
 bgStars.src = "images/star-bg-big.png";
-var tempWidth = 2000;
 
-var shipImg = new Image();
-shipImg.src = "images/ship1.png";
-
-var util = (function util() {
-  return {
-    lerp: function(v0, v1, t) {
-      return (1-t)*v0 + t*v1;
-    },
-    sign: function(x) {
-      return x && x / Math.abs(x);
-    },
-    roundToTwo: function(num) {    
-      return +(Math.round(num + "e+2")  + "e-2");
-    }
-  }
-})();
-
-if (Math.sign) {
-  util.sign = Math.sign;
-}
+var Ship = require('./ship.js');
+var util = require('./util.js');
+var Camera = require('./camera.js');
 
 function Level(width, height, ctx) {
   var tileSize = 64;
@@ -45,174 +27,6 @@ function Level(width, height, ctx) {
       ctx.lineTo(i*tileSize, height);
     }
     ctx.stroke()
-  }
-}
-
-// need a better pattern here
-function Camera(startPos, wView, hView, ctx) {
-  this.direction = {x: 0, y: 0};
-  this.x = startPos.x;
-  this.y = startPos.y;
-  this.width = wView;
-  this.height = hView;
-  this.scale = 1;
-
-  this.toWorld = function(clientX, clientY) {
-    return [
-      clientX/this.scale - ((wView/this.scale/2) - this.x),
-      clientY/this.scale - ((hView/this.scale/2) - this.y)
-    ]
-  };
-
-  this.zoom = function() {
-    if (this.scale == 1) {
-      this.scale = 0.75;
-    } else {
-      this.scale = 1;
-    }
-  };
-
-  this.update = function(mod) {
-    if (this.direction.x == 1) {
-      this.x += 5;
-    }
-    if (this.direction.x == -1) {
-      this.x -= 5;
-    }
-    if (this.direction.y == 1) {
-      this.y += 5;
-    }
-    if (this.direction.y == -1) {
-      this.y -= 5;
-    }
-  };
-
-  this.render = function() {
-    // Apply the scale first
-    ctx.scale(this.scale, this.scale);
-    // Move the scene, in relation to the middle of the viewport ()
-    ctx.translate(this.width/this.scale/2 - this.x, (this.height/this.scale/2) - this.y);
-  };
-
-  this.inside = function(x, y, width, height) {
-    // target x + 1/2 width of target should be great than left bound
-    // left bound = camera.x (center) - width/2
-    // width should be / by scale
-    if (x + width/2/this.scale > this.x - ((this.width/this.scale)/2)
-      && x - width/2/this.scale < this.x + ((this.width/this.scale)/2)) {
-      if (y + height/2/this.scale > this.y - ((this.height/this.scale)/2)
-        && y - height/2/this.scale < this.y + ((this.height/this.scale)/2)) {
-        return true
-      }
-    }
-    return false
-  };
-}
-
-function Ship(startPos, img, ctx) {
-  var x = startPos.x;
-  var y = startPos.y;
-  // var width = img.width;
-  // var height = img.height; fix me
-  var width = 64;
-  var height = 64;
-  var ACCELERATION = 100;
-  var maxSpeed = 500;
-  var currentSpeed = 0;
-  var moving = false;
-  var img = img;
-
-  var checkLocation = function(loc) {
-    if (loc === undefined) {
-      return null
-    } else if (loc.x < 0+width/2 || loc.x > tempWidth-width/2) {
-      return false
-    }
-    return true
-  };
-
-  return {
-    debug: function() {
-      return "x=> " + x + " y=> " + y
-    },
-    width: width, height: height,
-    getXY: function() {
-      return {x: x, y: y}
-    },
-    moveTo: function(location) {
-      var validLocation = checkLocation(location);
-      if (validLocation === true) {
-        this.location = location;
-      } else if (validLocation === false) { // null is different than false
-        console.error("Can't move there", location);
-        this.location = undefined;
-      }
-    },
-    inside: function(x2, y2) {
-      if (x2 > x - (width/2) && x2 < x + (width/2)) {
-        if (y2 > y - (height/2) && y2 < y + (height/2)) {
-          return true
-        }
-      }
-      return false
-    },
-    update: function(mod) {
-      if (this.location) {
-        moving = true;
-        // d = vt + (1/2)at^2
-        // determine + or - for x and y
-        var xDir = util.sign(this.location.x - x);
-        var yDir = util.sign(this.location.y - y);
-
-        // debugger
-        // x = (0.5*(ACCELERATION*xDir)*(mod*mod)+(currentSpeed*mod)+x);
-        // y = (0.5*(ACCELERATION*yDir)*(mod*mod)+(currentSpeed*mod)+y);
-
-        // currentSpeed = ACCELERATION*mod+currentSpeed;
-        // if (currentSpeed > maxSpeed) { // clamp speed, no more acc
-        //   currentSpeed = maxSpeed;
-        // }
-
-        // TODO: Don't use this for movement, use vectors
-        x = util.lerp(x, this.location.x, .1);
-        y = util.lerp(y, this.location.y, .1);
-
-        if (Math.abs(this.location.x - x) <= 1
-          && Math.abs(this.location.y - y) <= 1) {
-          moving = false;
-          this.attackMove = false; // In the future check to see if switch to attack
-          x = this.location.x;
-          y = this.location.y;
-          this.location = undefined;
-        }
-      }
-    },
-    render: function() {
-      ctx.beginPath();
-      // if (moving) {
-      //   if (this.attackMove) {
-      //     ctx.fillStyle = "#FF3300";
-      //   } else {
-      //     ctx.fillStyle = "#00CC00";
-      //   }
-      // } else if (!this.selected) {
-      //   ctx.fillStyle = "#717999";
-      // } else {
-      //   ctx.fillStyle = "#3333FF";
-      // }
-      ctx.drawImage(shipImg, x-width/2, y-width/2,width,height);
-      ctx.rect(x-width/2,y-width/2,width,height);
-      if (this.selected) {
-        ctx.fillStyle = "rgba(51, 51, 255, 0.3)";
-        ctx.fill();
-      }
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'white';
-      ctx.stroke();
-      // debug, draw dot
-      ctx.fillStyle = "yellow";
-      ctx.fillRect(x-1, y-1, 2, 2);
-    }
   }
 }
 
@@ -257,6 +71,8 @@ function Game() {
   var init = function() {
     this.requestAnimationFrame = window.requestAnimationFrame;
     var viewPort = {w: 1000, h: 700};
+    var shipImg = new Image();
+    shipImg.src = "images/ship1.png";
 
     var canvas = document.createElement('canvas');
     canvas.width = viewPort.w;
