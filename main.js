@@ -1,54 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-console.log("Hello!");
-
-var bgStars = new Image();
-bgStars.src = "images/star-bg-big.png";
-var tempWidth = 2000;
-
-var shipImg = new Image();
-shipImg.src = "images/ship1.png";
-
-var util = (function util() {
-  return {
-    lerp: function(v0, v1, t) {
-      return (1-t)*v0 + t*v1;
-    },
-    sign: function(x) {
-      return x && x / Math.abs(x);
-    },
-    roundToTwo: function(num) {    
-      return +(Math.round(num + "e+2")  + "e-2");
-    }
-  }
-})();
-
-if (Math.sign) {
-  util.sign = Math.sign;
-}
-
-function Level(width, height, ctx) {
-  var tileSize = 64;
-  var hLines = Math.floor(height / tileSize)+1; // run left to right
-  var vLines = Math.floor(width / tileSize)+1; // run top to bottom
-  console.info("lines", hLines, vLines);
-  // use to position grid, has *bounds*
-  // has titled bg info as well.
-  this.render = function() {
-    ctx.drawImage(bgStars, 0, 0, width, height);
-    ctx.beginPath();
-    ctx.strokeStyle = "rgba(0, 203, 255, 0.5)";
-    for(var i=0; i<hLines; i++) {
-      ctx.moveTo(0, i*tileSize);
-      ctx.lineTo(width, i*tileSize);
-    }
-    for(var i=0; i<vLines; i++) {
-      ctx.moveTo(i*tileSize, 0);
-      ctx.lineTo(i*tileSize, height);
-    }
-    ctx.stroke()
-  }
-}
-
+module.exports = Camera;
 // need a better pattern here
 function Camera(startPos, wView, hView, ctx) {
   this.direction = {x: 0, y: 0};
@@ -110,110 +61,37 @@ function Camera(startPos, wView, hView, ctx) {
   };
 }
 
-function Ship(startPos, img, ctx) {
-  var x = startPos.x;
-  var y = startPos.y;
-  // var width = img.width;
-  // var height = img.height; fix me
-  var width = 64;
-  var height = 64;
-  var ACCELERATION = 100;
-  var maxSpeed = 500;
-  var currentSpeed = 0;
-  var moving = false;
-  var img = img;
 
-  var checkLocation = function(loc) {
-    if (loc === undefined) {
-      return null
-    } else if (loc.x < 0+width/2 || loc.x > tempWidth-width/2) {
-      return false
+},{}],2:[function(require,module,exports){
+console.log("Hello!");
+
+var bgStars = new Image();
+bgStars.src = "images/star-bg-big.png";
+
+var Ship = require('./ship.js');
+var util = require('./util.js');
+var Camera = require('./camera.js');
+
+function Level(width, height, ctx) {
+  var tileSize = 64;
+  var hLines = Math.floor(height / tileSize)+1; // run left to right
+  var vLines = Math.floor(width / tileSize)+1; // run top to bottom
+  console.info("lines", hLines, vLines);
+  // use to position grid, has *bounds*
+  // has titled bg info as well.
+  this.render = function() {
+    ctx.drawImage(bgStars, 0, 0, width, height);
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(0, 203, 255, 0.5)";
+    for(var i=0; i<hLines; i++) {
+      ctx.moveTo(0, i*tileSize);
+      ctx.lineTo(width, i*tileSize);
     }
-    return true
-  };
-
-  return {
-    debug: function() {
-      return "x=> " + x + " y=> " + y
-    },
-    width: width, height: height,
-    getXY: function() {
-      return {x: x, y: y}
-    },
-    moveTo: function(location) {
-      var validLocation = checkLocation(location);
-      if (validLocation === true) {
-        this.location = location;
-      } else if (validLocation === false) { // null is different than false
-        console.error("Can't move there", location);
-        this.location = undefined;
-      }
-    },
-    inside: function(x2, y2) {
-      if (x2 > x - (width/2) && x2 < x + (width/2)) {
-        if (y2 > y - (height/2) && y2 < y + (height/2)) {
-          return true
-        }
-      }
-      return false
-    },
-    update: function(mod) {
-      if (this.location) {
-        moving = true;
-        // d = vt + (1/2)at^2
-        // determine + or - for x and y
-        var xDir = util.sign(this.location.x - x);
-        var yDir = util.sign(this.location.y - y);
-
-        // debugger
-        // x = (0.5*(ACCELERATION*xDir)*(mod*mod)+(currentSpeed*mod)+x);
-        // y = (0.5*(ACCELERATION*yDir)*(mod*mod)+(currentSpeed*mod)+y);
-
-        // currentSpeed = ACCELERATION*mod+currentSpeed;
-        // if (currentSpeed > maxSpeed) { // clamp speed, no more acc
-        //   currentSpeed = maxSpeed;
-        // }
-
-        // TODO: Don't use this for movement, use vectors
-        x = util.lerp(x, this.location.x, .1);
-        y = util.lerp(y, this.location.y, .1);
-
-        if (Math.abs(this.location.x - x) <= 1
-          && Math.abs(this.location.y - y) <= 1) {
-          moving = false;
-          this.attackMove = false; // In the future check to see if switch to attack
-          x = this.location.x;
-          y = this.location.y;
-          this.location = undefined;
-        }
-      }
-    },
-    render: function() {
-      ctx.beginPath();
-      // if (moving) {
-      //   if (this.attackMove) {
-      //     ctx.fillStyle = "#FF3300";
-      //   } else {
-      //     ctx.fillStyle = "#00CC00";
-      //   }
-      // } else if (!this.selected) {
-      //   ctx.fillStyle = "#717999";
-      // } else {
-      //   ctx.fillStyle = "#3333FF";
-      // }
-      ctx.drawImage(shipImg, x-width/2, y-width/2,width,height);
-      ctx.rect(x-width/2,y-width/2,width,height);
-      if (this.selected) {
-        ctx.fillStyle = "rgba(51, 51, 255, 0.3)";
-        ctx.fill();
-      }
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'white';
-      ctx.stroke();
-      // debug, draw dot
-      ctx.fillStyle = "yellow";
-      ctx.fillRect(x-1, y-1, 2, 2);
+    for(var i=0; i<vLines; i++) {
+      ctx.moveTo(i*tileSize, 0);
+      ctx.lineTo(i*tileSize, height);
     }
+    ctx.stroke()
   }
 }
 
@@ -258,6 +136,8 @@ function Game() {
   var init = function() {
     this.requestAnimationFrame = window.requestAnimationFrame;
     var viewPort = {w: 1000, h: 700};
+    var shipImg = new Image();
+    shipImg.src = "images/ship1.png";
 
     var canvas = document.createElement('canvas');
     canvas.width = viewPort.w;
@@ -489,4 +369,139 @@ function Game() {
 game = new Game();
 game.start();
 console.log(game);
-},{}]},{},[1])
+},{"./camera.js":1,"./ship.js":3,"./util.js":4}],3:[function(require,module,exports){
+var util = require('./util.js');
+
+module.exports = Ship;
+
+function Ship(startPos, img, ctx) {
+  var x = startPos.x;
+  var y = startPos.y;
+  // var width = img.width;
+  // var height = img.height; fix me
+  var width = 64;
+  var height = 64;
+  var ACCELERATION = 100;
+  var maxSpeed = 500;
+  var currentSpeed = 0;
+  var moving = false;
+  var img = img;
+
+  var tempWidth = 2000;
+
+  var checkLocation = function(loc) {
+    if (loc === undefined) {
+      return null
+    } else if (loc.x < 0+width/2 || loc.x > tempWidth-width/2) {
+      return false
+    }
+    return true
+  };
+
+  return {
+    debug: function() {
+      return "x=> " + x + " y=> " + y
+    },
+    width: width, height: height,
+    getXY: function() {
+      return {x: x, y: y}
+    },
+    moveTo: function(location) {
+      var validLocation = checkLocation(location);
+      if (validLocation === true) {
+        this.location = location;
+      } else if (validLocation === false) { // null is different than false
+        console.error("Can't move there", location);
+        this.location = undefined;
+      }
+    },
+    inside: function(x2, y2) {
+      if (x2 > x - (width/2) && x2 < x + (width/2)) {
+        if (y2 > y - (height/2) && y2 < y + (height/2)) {
+          return true
+        }
+      }
+      return false
+    },
+    update: function(mod) {
+      if (this.location) {
+        moving = true;
+        // d = vt + (1/2)at^2
+        // determine + or - for x and y
+        var xDir = util.sign(this.location.x - x);
+        var yDir = util.sign(this.location.y - y);
+
+        // debugger
+        // x = (0.5*(ACCELERATION*xDir)*(mod*mod)+(currentSpeed*mod)+x);
+        // y = (0.5*(ACCELERATION*yDir)*(mod*mod)+(currentSpeed*mod)+y);
+
+        // currentSpeed = ACCELERATION*mod+currentSpeed;
+        // if (currentSpeed > maxSpeed) { // clamp speed, no more acc
+        //   currentSpeed = maxSpeed;
+        // }
+
+        // TODO: Don't use this for movement, use vectors
+        x = util.lerp(x, this.location.x, .1);
+        y = util.lerp(y, this.location.y, .1);
+
+        if (Math.abs(this.location.x - x) <= 1
+          && Math.abs(this.location.y - y) <= 1) {
+          moving = false;
+          this.attackMove = false; // In the future check to see if switch to attack
+          x = this.location.x;
+          y = this.location.y;
+          this.location = undefined;
+        }
+      }
+    },
+    render: function() {
+      ctx.beginPath();
+      // if (moving) {
+      //   if (this.attackMove) {
+      //     ctx.fillStyle = "#FF3300";
+      //   } else {
+      //     ctx.fillStyle = "#00CC00";
+      //   }
+      // } else if (!this.selected) {
+      //   ctx.fillStyle = "#717999";
+      // } else {
+      //   ctx.fillStyle = "#3333FF";
+      // }
+      ctx.drawImage(img, x-width/2, y-width/2,width,height);
+      ctx.rect(x-width/2,y-width/2,width,height);
+      if (this.selected) {
+        ctx.fillStyle = "rgba(51, 51, 255, 0.3)";
+        ctx.fill();
+      }
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'white';
+      ctx.stroke();
+      // debug, draw dot
+      ctx.fillStyle = "yellow";
+      ctx.fillRect(x-1, y-1, 2, 2);
+    }
+  }
+}
+
+},{"./util.js":4}],4:[function(require,module,exports){
+var util = (function util() {
+  console.log("moo util");
+  return {
+    lerp: function(v0, v1, t) {
+      return (1-t)*v0 + t*v1;
+    },
+    sign: function(x) {
+      return x && x / Math.abs(x);
+    },
+    roundToTwo: function(num) {    
+      return +(Math.round(num + "e+2")  + "e-2");
+    }
+  }
+})();
+
+if (Math.sign) {
+  util.sign = Math.sign;
+}
+
+module.exports = util;
+},{}]},{},[2])
