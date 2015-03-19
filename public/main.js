@@ -73,9 +73,11 @@ var util = require('./util.js');
 var Camera = require('./camera.js');
 
 function Level(width, height, ctx) {
-  var tileSize = 64;
-  var hLines = Math.floor(height / tileSize)+1; // run left to right
-  var vLines = Math.floor(width / tileSize)+1; // run top to bottom
+  var tileSize = 96;
+  var hLines = Math.floor(height / ((Math.sqrt(3)/2)*tileSize)); // run left to right
+  var vLines = Math.floor(width / (tileSize*0.75)); // run top to bottom
+  var mSqrt = 0.866;
+  var yCenter = (Math.sqrt(3)/2)*tileSize;
   console.info("lines", hLines, vLines);
   // use to position grid, has *bounds*
   // has titled bg info as well.
@@ -83,16 +85,29 @@ function Level(width, height, ctx) {
     ctx.drawImage(bgStars, 0, 0, width, height);
     ctx.beginPath();
     ctx.strokeStyle = "rgba(0, 203, 255, 0.5)";
-    for(var i=0; i<hLines; i++) {
-      ctx.moveTo(0, i*tileSize);
-      ctx.lineTo(width, i*tileSize);
-    }
-    for(var i=0; i<vLines; i++) {
-      ctx.moveTo(i*tileSize, 0);
-      ctx.lineTo(i*tileSize, height);
+    for(var i=0; i<vLines; i++) { // x pos
+      var offset = (i % 2 == 0 ? 0 : yCenter/2);
+      for(var j=0; j<hLines; j++) { // y pos
+        drawHex({x:(tileSize/2)+(i*tileSize*0.75), y:(j+0.5)*(yCenter)+offset});
+      }
     }
     ctx.stroke()
   }
+  var drawHex = function(center) {
+    var currHex = hexCorner([center.x, center.y], tileSize/2, 0);
+    ctx.moveTo(currHex[0], currHex[1]);
+    for(var i=1; i<=6; i++) {
+      currHex = hexCorner([center.x, center.y], tileSize/2, i);
+      ctx.lineTo(currHex[0], currHex[1]);
+    }
+  };
+
+  var hexCorner = function(center, size, i) {
+    return [
+      Math.round(center[0] + size * Math.cos(i * 2 * Math.PI / 6)),
+      Math.round(center[1]+ size * Math.sin(i * 2 * Math.PI / 6))
+    ];
+  };
 }
 
 function Game() {
@@ -325,16 +340,13 @@ function Game() {
 
     // draw HEX around camera
     ctx.beginPath();
-    var startHex = hexCorner([this.camera.x, this.camera.y], 32, 0);
-    // // console.log(startHex);
-    var lastPoint = startHex;
-    ctx.moveTo(startHex[0], startHex[1]);
+    var currHex = hexCorner([this.camera.x, this.camera.y], 32, 0);
+    ctx.moveTo(currHex[0], currHex[1]);
     for(var i=1; i<=6; i++) {
-      var currHex = hexCorner([this.camera.x, this.camera.y], 32, i);
+      currHex = hexCorner([this.camera.x, this.camera.y], 32, i);
       ctx.lineTo(currHex[0], currHex[1]);
-      startHex = currHex;
     }
-    ctx.strokeStyle = "rgba(0, 203, 255, 0.5)";
+    ctx.strokeStyle = "rgba(255, 15, 90, 0.5)";
 
     ctx.stroke();
     ctx.restore();
