@@ -24,6 +24,9 @@ function Level(width, height, ctx) {
       var offset = (i % 2 == 0 ? 0 : yCenter/2);
       for(var j=0; j<hLines; j++) { // y pos
         drawHex({x:(tileSize/2)+(i*tileSize*0.75), y:(j+0.5)*(yCenter)+offset});
+        ctx.fillStyle="rgba(200, 10, 255, 1)";
+        var xOffset = ctx.measureText(i+", "+j).width;
+        ctx.fillText(i+", "+j, ((tileSize/2)+(i*tileSize*0.75)-xOffset/2), (j+0.5)*(yCenter)+offset);
       }
     }
     ctx.stroke()
@@ -134,6 +137,7 @@ function Game() {
               console.log('space left click');
               inputState.actions.LEFTCLICK = false;
               var worldTarget = camera.toWorld(target.x, target.y);
+              this.level.findGrid(worldTarget);
               console.log(target, worldTarget);
               for(var i=0; i<allUnits.length; i++) {
                 if (allUnits[i].isVisible) {
@@ -272,18 +276,6 @@ function Game() {
     }
     ctx.fillStyle = "yellow";
     ctx.fillRect(this.camera.x-2, this.camera.y-2, 4, 4);
-
-    // draw HEX around camera
-    ctx.beginPath();
-    var currHex = hexCorner([this.camera.x, this.camera.y], 32, 0);
-    ctx.moveTo(currHex[0], currHex[1]);
-    for(var i=1; i<=6; i++) {
-      currHex = hexCorner([this.camera.x, this.camera.y], 32, i);
-      ctx.lineTo(currHex[0], currHex[1]);
-    }
-    ctx.strokeStyle = "rgba(255, 15, 90, 0.5)";
-
-    ctx.stroke();
     ctx.restore();
   };
 
