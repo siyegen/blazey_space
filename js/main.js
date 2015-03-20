@@ -16,6 +16,51 @@ function Level(width, height, ctx) {
   console.info("lines", hLines, vLines);
   // use to position grid, has *bounds*
   // has titled bg info as well.
+
+  function cube_round(h) {
+    console.log("x,y,z", h);
+    var rx = Math.round(h.x)
+    var ry = Math.round(h.y)
+    var rz = Math.round(h.z)
+
+    var x_diff = Math.abs(rx - h.x)
+    var y_diff = Math.abs(ry - h.y)
+    var z_diff = Math.abs(rz - h.z)
+
+    if (x_diff > y_diff && x_diff > z_diff) {
+        rx = -ry-rz;
+    } else if (y_diff > z_diff) {
+        ry = -rx-rz;
+    } else {
+        rz = -rx-ry;
+    } 
+
+    return {x:rx, y:ry, z:rz};
+  }
+
+  this.findHex = function(worldTarget) {
+    var hex = pixelToHex(worldTarget[0], worldTarget[1]);
+    console.log("moo", hex);
+    var narrowW = tileSize * 0.75;
+    var hh = Math.sqrt(3)/2 * tileSize;
+    var u = narrowW / worldTarget[0];
+    var v = worldTarget[1]/hh - 0.5*u;
+    console.log("other", u, v);
+  };
+
+  var pixelToHex = function(x, y) {
+    q = x * 2/3 / (tileSize/2);
+    r = (-x / 3 + Math.sqrt(3)/3 * y) / (tileSize/2);
+    // console.log("q and r", q, r);
+    var cube = cube_round({x:q, y:-q-r, z:r})
+    // console.log("maybe hex", hex);
+    // return [hex.x, (hex.z + (hex.x - (hex.x&1)) / 2)];
+    return [
+      cube.x,
+      cube.z + (cube.x - (cube.x&1)) /2
+    ];
+  };
+
   this.render = function() {
     ctx.drawImage(bgStars, 0, 0, width, height);
     ctx.beginPath();
@@ -120,7 +165,7 @@ function Game() {
               if (target == null) { // null means a bad click
                 console.error("Error moving", unit);
                 inputState.actions.RIGHTCLICK = false;
-                return
+                return;
               } else { // normal path here
                 var move = camera.toWorld(target.x, target.y);
                 inputState.mouseTarget = null;
@@ -133,11 +178,11 @@ function Game() {
         },
         space: function(inputState) {
           return {
-            leftClick: function(target) {
+            leftClick: function(target, level) {
               console.log('space left click');
               inputState.actions.LEFTCLICK = false;
               var worldTarget = camera.toWorld(target.x, target.y);
-              this.level.findGrid(worldTarget);
+              level.findHex(worldTarget);
               console.log(target, worldTarget);
               for(var i=0; i<allUnits.length; i++) {
                 if (allUnits[i].isVisible) {
@@ -205,7 +250,7 @@ function Game() {
       }
     } else if(currentContext === ALL_CONTEXTS.SPACE) {
       if (inputState.actions.LEFTCLICK) {
-        gameContexts[currentContext](inputState).leftClick(inputState.mouseTarget);
+        gameContexts[currentContext](inputState).leftClick(inputState.mouseTarget, this.level);
       }
       inputState.mouseTarget = null;
     }
