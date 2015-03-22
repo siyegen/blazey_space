@@ -40,12 +40,10 @@ function Level(width, height, ctx) {
 
   this.findHex = function(worldTarget) {
     var hex = pixelToHex(worldTarget[0], worldTarget[1]);
-    console.log("moo", hex);
     var narrowW = tileSize * 0.75;
     var hh = Math.sqrt(3)/2 * tileSize;
     var u = narrowW / worldTarget[0];
     var v = worldTarget[1]/hh - 0.5*u;
-    console.log("other", u, v);
   };
 
   var pixelToHex = function(x, y) {
