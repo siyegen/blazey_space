@@ -19,6 +19,26 @@ function Level(width, height, ctx) {
 
   this.findHex = function(worldTarget) {
     console.debug(worldTarget[0], worldTarget[1]);
+    var cx = worldTarget[0];
+    var colMajor = Math.floor(cx/tileSize);
+    var colMinor;
+    // Same as x comp of corners, also don't need all of these
+    var leftLeftB = colMajor * tileSize * 0.75;
+    var leftRightB = leftLeftB + tileSize/4;
+    var middleLeftB = leftRightB;
+    var middleRightB = middleLeftB + tileSize/2;
+    var rightLeftB = middleRightB;
+    var rightRightB = middleRightB + tileSize/4;
+
+    if (cx > leftLeftB && cx <= leftRightB) {
+      colMinor = -1;
+    } else if (cx > middleLeftB && cx <= middleRightB) {
+      colMinor = 0;
+    } else if (cx > rightLeftB && cx <= rightRightB) {
+      colMinor = 1;
+    }
+
+    console.debug("col pos", colMajor, colMinor);
   };
 
   this.render = function() {
