@@ -13,14 +13,19 @@ function Level(width, height, ctx) {
   var vLines = Math.floor(width / (tileSize*0.75)); // run top to bottom
   var mSqrt = 0.866;
   var yCenter = (Math.sqrt(3)/2)*tileSize;
+  var highlightedColumn = null;
   console.info("lines", hLines, vLines);
   // use to position grid, has *bounds*
   // has titled bg info as well.
 
+  this.highlightCol = function(column) {
+    highlightedColumn = column;
+  };
+
   this.findHex = function(worldTarget) {
     console.debug(worldTarget[0], worldTarget[1]);
     var cx = worldTarget[0];
-    var colMajor = Math.floor(cx/tileSize);
+    var colMajor = Math.floor(cx/(tileSize*0.75));
     var colMinor;
     // Same as x comp of corners, also don't need all of these
     var leftLeftB = colMajor * tileSize * 0.75;
@@ -39,22 +44,28 @@ function Level(width, height, ctx) {
     }
 
     console.debug("col pos", colMajor, colMinor);
+    return colMajor;
   };
 
   this.render = function() {
     ctx.drawImage(bgStars, 0, 0, width, height);
-    ctx.beginPath();
-    ctx.strokeStyle = "rgba(0, 203, 255, 0.5)";
     for(var i=0; i<vLines; i++) { // x pos
       var offset = (i % 2 == 0 ? 0 : yCenter/2);
       for(var j=0; j<hLines; j++) { // y pos
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(0, 203, 255, 0.5)";
+        ctx.fillStyle = "none";
         drawHex({x:(tileSize/2)+(i*tileSize*0.75), y:(j+0.5)*(yCenter)+offset});
         ctx.fillStyle="rgba(220, 120, 50, 0.7)";
         var xOffset = ctx.measureText(i+", "+j).width;
         ctx.fillText(i+", "+j, ((tileSize/2)+(i*tileSize*0.75)-xOffset/2), (j+0.5)*(yCenter)+offset);
+        if (i == highlightedColumn) {
+          ctx.fillStyle = 'rgba(150, 203, 255, 0.3)';
+          ctx.fill();
+        }
+        ctx.stroke()
       }
     }
-    ctx.stroke()
   }
   var drawHex = function(center) {
     var currHex = hexCorner([center.x, center.y], tileSize/2, 0);
@@ -162,7 +173,7 @@ function Game() {
               console.log('space left click');
               inputState.actions.LEFTCLICK = false;
               var worldTarget = camera.toWorld(target.x, target.y);
-              level.findHex(worldTarget);
+              var majorCol = level.findHex(worldTarget);
               console.log(target, worldTarget);
               for(var i=0; i<allUnits.length; i++) {
                 if (allUnits[i].isVisible) {
@@ -174,6 +185,10 @@ function Game() {
                     break;
                   }
                 }
+              }
+              if (selectedUnit === null) {
+                console.log("major col", majorCol);
+                level.highlightCol(majorCol);
               }
             }
           }
