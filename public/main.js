@@ -121,13 +121,13 @@ function Level(width, height, ctx) {
         ctx.strokeStyle = "rgba(0, 203, 255, 0.5)";
         ctx.fillStyle = "none";
         drawHex({x:(tileSize/2)+(i*tileSize*0.75), y:(j+0.5)*(yCenter)+offset});
+        if (i == highlightedColumn) {
+          ctx.fillStyle = 'rgba(250, 203, 255, 0.3)';
+          ctx.fill();
+        }
         ctx.fillStyle="rgba(220, 120, 50, 0.7)";
         var xOffset = ctx.measureText(i+", "+j).width;
         ctx.fillText(i+", "+j, ((tileSize/2)+(i*tileSize*0.75)-xOffset/2), (j+0.5)*(yCenter)+offset);
-        if (i == highlightedColumn) {
-          ctx.fillStyle = 'rgba(150, 203, 255, 0.3)';
-          ctx.fill();
-        }
         ctx.stroke()
       }
     }
