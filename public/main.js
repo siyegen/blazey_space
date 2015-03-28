@@ -216,6 +216,7 @@ function Game() {
                 currentUnit.selected = false;
               }
               currentUnit = null;
+              selectedUnit = null;
             },
             rightClick: function(unit, target) {
               if (target == null) { // null means a bad click
@@ -251,6 +252,7 @@ function Game() {
                   }
                 }
               }
+              console.log("selected?", selectedUnit);
               if (selectedUnit === null) {
                 console.log("major col", majorCol);
                 level.highlightCol(majorCol);
