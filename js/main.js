@@ -144,14 +144,36 @@ function Game() {
       return {
         ship: function(inputState) {
           return {
-            leftClick: function(currentUnit) {
+            leftClick: function(currentUnit, target) {
               currentContext = ALL_CONTEXTS.SPACE;
               inputState.actions.LEFTCLICK = false;
-              if (currentUnit) {
-                currentUnit.selected = false;
+
+              var worldTarget = camera.toWorld(target.x, target.y);
+              var changedSelection = false;
+              console.log(target, worldTarget);
+              for(var i=0; i<allUnits.length; i++) {
+                if (allUnits[i].isVisible) {
+                  if (allUnits[i].inside(worldTarget[0], worldTarget[1])) {
+                    console.log("selected", allUnits[i]);
+                    selectedUnit = allUnits[i];
+                    selectedUnit.selected = true;
+                    currentContext = ALL_CONTEXTS.SHIP;
+                    changedSelection = true;
+                    break;
+                  }
+                }
               }
-              currentUnit = null;
-              selectedUnit = null;
+
+              if (changedSelection) {
+                currentUnit.selected = false;
+              } else {
+                if (currentUnit) {
+                  currentUnit.selected = false;
+                }
+                currentUnit = null;
+                selectedUnit = null;
+              }
+
             },
             rightClick: function(unit, target) {
               if (target == null) { // null means a bad click
