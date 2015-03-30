@@ -60,10 +60,10 @@ function Level(width, height, ctx) {
           ctx.fillStyle = 'rgba(250, 203, 255, 0.3)';
           ctx.fill();
         }
-        ctx.fillStyle="rgba(220, 120, 50, 0.7)";
+        ctx.fillStyle="rgba(220, 220, 220, 0.9)";
         var xOffset = ctx.measureText(i+", "+j).width;
         ctx.fillText(i+", "+j, ((tileSize/2)+(i*tileSize*0.75)-xOffset/2), (j+0.5)*(yCenter)+offset);
-        ctx.stroke()
+        ctx.stroke();
       }
     }
   }
