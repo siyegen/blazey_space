@@ -79,19 +79,27 @@ function Level(width, height, ctx) {
   var mSqrt = 0.866;
   var yCenter = (Math.sqrt(3)/2)*tileSize;
   var highlightedColumn = null;
+  var highlightHex = null;
   console.info("lines", hLines, vLines);
   // use to position grid, has *bounds*
   // has titled bg info as well.
 
-  this.highlightCol = function(column) {
-    highlightedColumn = column;
+  this.highlightCol = function(hexCoord) {
+    if (hexCoord.y == null) {
+      highlightedColumn = hexCoord.x;
+      highlightHex = null;
+    } else {
+      highlightHex = hexCoord;
+    }
   };
 
   this.findHex = function(worldTarget) {
     console.debug(worldTarget[0], worldTarget[1]);
+    var hexHeight = ((Math.sqrt(3)/2)*tileSize);
     var cx = worldTarget[0];
+    var cy = worldTarget[1];
     var colMajor = Math.floor(cx/(tileSize*0.75));
-    var colMinor;
+    var colMinor = 0; // Assume center click first
     // Same as x comp of corners, also don't need all of these
     var leftLeftB = colMajor * tileSize * 0.75;
     var leftRightB = leftLeftB + tileSize/4;
@@ -102,14 +110,23 @@ function Level(width, height, ctx) {
 
     if (cx > leftLeftB && cx <= leftRightB) {
       colMinor = -1;
-    } else if (cx > middleLeftB && cx <= middleRightB) {
-      colMinor = 0;
     } else if (cx > rightLeftB && cx <= rightRightB) {
       colMinor = 1;
     }
 
     console.debug("col pos", colMajor, colMinor);
-    return colMajor;
+
+    var row = null;
+    if (colMinor == 0) { // Center click, no need to check lines
+      if (colMajor % 2 == 0) {
+        row = Math.floor(cy/hexHeight);
+      } else { // offset column
+        console.debug("offset");
+        row = Math.floor((cy - hexHeight/2) / hexHeight);
+      }
+      console.debug("row: ", row);
+    }
+    return {x: colMajor, y: row};
   };
 
   this.render = function() {
@@ -121,7 +138,12 @@ function Level(width, height, ctx) {
         ctx.strokeStyle = "rgba(0, 203, 255, 0.5)";
         ctx.fillStyle = "none";
         drawHex({x:(tileSize/2)+(i*tileSize*0.75), y:(j+0.5)*(yCenter)+offset});
-        if (i == highlightedColumn) {
+        if (highlightHex != null) {
+          if (highlightHex.x == i && highlightHex.y == j) {
+            ctx.fillStyle = 'rgba(250, 203, 255, 0.3)';
+            ctx.fill();
+          }
+        } else if (i == highlightedColumn) {
           ctx.fillStyle = 'rgba(250, 203, 255, 0.3)';
           ctx.fill();
         }
@@ -261,7 +283,7 @@ function Game() {
               console.log('space left click');
               inputState.actions.LEFTCLICK = false;
               var worldTarget = camera.toWorld(target.x, target.y);
-              var majorCol = level.findHex(worldTarget);
+              var hexCoord = level.findHex(worldTarget);
               console.log(target, worldTarget);
               for(var i=0; i<allUnits.length; i++) {
                 if (allUnits[i].isVisible) {
@@ -276,8 +298,8 @@ function Game() {
               }
               console.log("selected?", selectedUnit);
               if (selectedUnit === null) {
-                console.log("major col", majorCol);
-                level.highlightCol(majorCol);
+                console.log("hex selected", hexCoord);
+                level.highlightCol(hexCoord);
               }
             }
           }
